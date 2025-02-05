@@ -1,30 +1,34 @@
+from flask import Flask, jsonify, request
+from flask_cors import CORS
 import requests
 
-def get_weather(city, api_key):
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
+app = Flask(__name__)
+CORS(app)  # Fix lỗi CORS
+
+API_KEY = "392b44d861bff9b6fac2585893b51903"  # Thay thế bằng API Key mới
+
+@app.route('/weather', methods=['GET'])
+def get_weather():
+    city = request.args.get('city')
+    if not city:
+        return jsonify({"error": "Vui lòng nhập tên thành phố!"}), 400
+
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
     response = requests.get(url)
-    
+
     if response.status_code == 200:
         data = response.json()
-        weather = {     
+        weather_data = {
             "city": data["name"],
             "temperature": data["main"]["temp"],
             "humidity": data["main"]["humidity"],
             "description": data["weather"][0]["description"],
+            "wind_speed": data["wind"]["speed"],
+            "icon": data["weather"][0]["icon"],  # Lấy mã icon
         }
-        return weather
+        return jsonify(weather_data)
     else:
-        return {"error": "Không thể lấy dữ liệu thời tiết!"}
+        return jsonify({"error": "Không thể lấy dữ liệu thời tiết!"}), 400
 
-if __name__ == "__main__":
-    API_KEY = "392b44d861bff9b6fac2585893b51903"  # Thay thế bằng API Key của bạn
-    city = input("Nhập tên thành phố: ")
-    weather_data = get_weather(city, API_KEY)
-    
-    if "error" in weather_data:
-        print(weather_data["error"])
-    else:
-        print(f"Thành phố: {weather_data['city']}")
-        print(f"Nhiệt độ: {weather_data['temperature']}°C")
-        print(f"Độ ẩm: {weather_data['humidity']}%")
-        print(f"Mô tả: {weather_data['description']}")
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
